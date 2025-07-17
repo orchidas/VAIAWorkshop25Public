@@ -1,0 +1,7 @@
+.DS_Store
+.vscode/
+__pycache__
+*.wav
+*.png
+/.venv
+/src/VAIAWorkshop.egg-info

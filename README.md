@@ -1,0 +1,30 @@
+This is the repository for the 'Virtual Acoustics in Immersive Audio' workshop to be held at CCRMA, Stanford University in July 2025, taught by Orchisama Das (KCL) 
+and Gloria Dal Santo (Aalto University). We will upload assignments and code here.
+
+### Installation
+- Fork the repo to your github account.
+- Clone the repository to your local machine using `git clone https://github.com/YOUR-USERNAME/VAIAWorkshop25.git`
+- Create a virtual environment with `python3 -m venv .venv`. Always activate the virtual environment with `source .venv/bin/activate`.
+- Install the repository with `pip install -e .` `pyproject.toml` contains all dependendies. Installation with pyproject.toml requires pip > 21.3.
+- In week 2, we will ask you to generate and save spatial audio data in the (SOFA format)[https://www.sofaconventions.org/mediawiki/index.php/SOFA_(Spatially_Oriented_Format_for_Acoustics]. We will load these files into the [SPARTA plugin suite](https://github.com/leomccormack/SPARTA/releases/tag/v1.7.1) and auralize them in a DAW. Make sure you have SPARTA installed, and any DAW of your choice (we recommend using [Reaper](https://www.reaper.fm/)).
+
+### Structure
+- Code is in the [src](src/) folder. We will ask you to complete the functions in the scripts in the this folder. Do not add any test code to this folder.
+	- The code for week 1 is in the `room_acoustics` folder
+	- The code for week 2 is in the `spatial_audio` folder
+	- Reusable functions across both weeks are in `utils.py`
+- All test code should be in `jupyter notebooks` and placed in the [notebooks](notebooks/) folder (NOT in `src`). 
+	- You can call functions in the `src` folder from your notebooks. For example, to use the `t60_estimator` function in `src/room_acoustics/analysis.py`, you can write `from room_acoustics.analysis import t60_estimator` in your notebook.
+	- We will ask you to submit plots and wav files along with your notebooks. For plotting we will use the `matplotlib` library and for reading/writing wav files we will use the `soundfile` library. 
+- The instructions for assignments are in the [assignments](assignments/) folder. The assignments span a week each, but are divided in several parts.
+- We recommend you download the data needed for the assignments in thed [data](data/) folder. The link to this folder has been shared with you.
+
+### Instructions for submission
+
+- Commit the changes you make (`git add -u` + `git commit -m`) and push it to the forked repo with `git push origin <your branch name>`. 
+	- The default branch name is `main`. We recommend you create your own branch with `git checkout -b <your branch name>`.
+- We will release the solutions to the assignments daily. To keep up with those, configure git to sync your fork with the original repository.
+	- First add the original repository as upstream, `git remote add upstream https://github.com/orchidas/VAIAWorkshop25.git`
+	- Now you can do daily pulls with `git pull upstream main`. This will pull the latest solutions into your `main` branch. DO NOT push to the upstream main branch.
+	- To merge upstream `main` with your branch, pull the main branch checkout your branch and write `git merge main`. You will have to fix merge conflicts manually. We recommend doing this only if you are comfortable with git.
+
