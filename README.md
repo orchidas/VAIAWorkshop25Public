@@ -4,7 +4,7 @@ and Gloria Dal Santo (Aalto University). We will upload assignments and code her
 ### Installation
 - Fork the repo to your github account.
 - Clone the repository to your local machine using `git clone https://github.com/YOUR-USERNAME/VAIAWorkshop25Public.git`
-- Create a virtual environment with `python3 -m venv .venv`. Always activate the virtual environment with `source .venv/bin/activate`.
+- Create a virtual environment with `python3 -m venv .venv`. For Linux/Mac users, activate the virtual environment with `source .venv/bin/activate`. For Windows users, activate virtual environment with `C:\> .venv\Scripts\activate.bat` on the command prompt, or `C:\> .venv\Scripts\Activate.ps1` on PowerShell(not tested).
 - Install the repository with `pip install -e .` `pyproject.toml` contains all dependendies. Installation with pyproject.toml requires pip > 21.3.
 - In week 2, we will ask you to generate and save spatial audio data in the [SOFA format](https://www.sofaconventions.org/mediawiki/index.php/SOFA_(Spatially_Oriented_Format_for_Acoustics)). We will load these files into the [SPARTA plugin suite](https://github.com/leomccormack/SPARTA/releases/tag/v1.7.1) and auralize them in a DAW. For one of the assignments, we will use the [3DTI Spatialiser VST plugin](https://github.com/3DTune-In/3dti_AudioToolkit/releases). Make sure you have SPARTA and 3DTI installed, along with any DAW of your choice (we recommend using [Reaper](https://www.reaper.fm/)). 
 
