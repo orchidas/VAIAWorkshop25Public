@@ -15,9 +15,9 @@ and Gloria Dal Santo (Aalto University). We will upload assignments and code her
 	- Reusable functions across both weeks are in `utils.py`
 - All test code should be in `jupyter notebooks` and placed in the [notebooks](notebooks/) folder (NOT in `src`). 
 	- You can call functions in the `src` folder from your notebooks. For example, to use the `t60_estimator` function in `src/room_acoustics/analysis.py`, you can write `from room_acoustics.analysis import t60_estimator` in your notebook.
-	- We will ask you to submit plots and wav files along with your notebooks. For plotting we will use the `matplotlib` library and for reading/writing wav files we will use the `soundfile` library. 
+	- When requesting assistance after the lecture hours, please submit plots and wav files along with your notebooks. For plotting we will use the `matplotlib` library and for reading/writing wav files we will use the `soundfile` library. 
 - The instructions for assignments are in the [assignments](assignments/) folder. The assignments span a week each, but are divided in several parts.
-- We recommend you download the data needed for the assignments in thed [data](data/) folder. The link to this folder has been shared with you.
+- We recommend you download the data needed for the assignments in thed [data](data/) folder. The link to the online folder containing the data has been shared with you.
 
 ### Instructions for submission
 
@@ -25,6 +25,6 @@ and Gloria Dal Santo (Aalto University). We will upload assignments and code her
 	- The default branch name is `main`. We recommend you create your own branch with `git checkout -b <your branch name>`.
 - We will release the solutions to the assignments daily. To keep up with those, configure git to sync your fork with the original repository.
 	- First add the original repository as upstream, `git remote add upstream https://github.com/orchidas/VAIAWorkshop25Public.git`
-	- Now you can do daily pulls with `git pull upstream main`. This will pull the latest solutions into your `main` branch. DO NOT push to the upstream main branch.
-	- To merge upstream `main` with your branch, pull the main branch checkout your branch and write `git merge main`. You will have to fix merge conflicts manually. We recommend doing this only if you are comfortable with git.
+	- Now you can do daily pulls with `git pull upstream main`. This will pull the latest solutions into your `main` branch.
+	- To merge upstream `main` with your branch, pull the main branch, checkout your branch, and run `git merge main`. You will have to fix merge conflicts manually. We recommend doing this only if you are comfortable with git.
 
