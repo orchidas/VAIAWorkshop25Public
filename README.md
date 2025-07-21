@@ -14,7 +14,7 @@ and Gloria Dal Santo (Aalto University). We will upload assignments and code her
 	- The code for week 1 is in the `room_acoustics` folder
 	- The code for week 2 is in the `spatial_audio` folder
 	- Reusable functions across both weeks are in `utils.py`
-- All test code should be in `jupyter notebooks` and placed in the [notebooks](notebooks/) folder (NOT in `src`). 
+- All test code should be in `jupyter notebooks` and placed in the [notebooks](notebooks/) folder (NOT in `src`). To open a jupyter notebook, go to the terminal, activate virtual environment, and write `jupyter notebook &`. This will open notebooks in your browser.
 	- You can call functions in the `src` folder from your notebooks. For example, to use the `t60_estimator` function in `src/room_acoustics/analysis.py`, you can write `from room_acoustics.analysis import t60_estimator` in your notebook.
 	- When requesting assistance after the lecture hours, please submit plots and wav files along with your notebooks. For plotting we will use the `matplotlib` library and for reading/writing wav files we will use the `soundfile` library. 
 - The instructions for assignments are in the [assignments](assignments/) folder. The assignments span a week each, but are divided in several parts.
