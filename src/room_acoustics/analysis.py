@@ -248,6 +248,7 @@ def normalized_echo_density(
     window_func = window_func / sum(window_func)
     # Slide window across RIR and compute normalized echo density
     for cursor in range(len(rir)):
+        pass # REMOVE THIS LINE AND IMPLEMENT THE FUNCTION
         ### WRITE YOUR CODE HERE ###
         # Extract the current frame from the padded RIR
         # Compute the weighted standard deviation of the frame
