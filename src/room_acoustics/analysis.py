@@ -34,12 +34,17 @@ def schroeder_backward_int(
     tuple of NDArray
         Tuple containing the backward integrated and normalized array, and the normalization value(s) used.
     """
-
-    ### WRITE YOUR CODE HERE ###
     # Flip the input array to prepare for backward integration
-    # Subtract noise power from the squared signal if requested (This will use in section 4.3)
+    out = np.flip(x, axis=-1)
+    # Subtract noise power from the squared signal if requested 
+    if subtract_noise:
+        out_sqrd = out ** 2 - noise_level ** 2
+    else:
+        out_sqrd = out ** 2
     # Compute cumulative sum (integration) over the reversed array
+    out = np.cumsum(out_sqrd, axis=-1)
     # Flip the result back to original order
+    out = np.flip(out, axis=-1)
 
     # Normalize the energy if requested
     if energy_norm:
@@ -93,15 +98,15 @@ def compute_edc(
     NDArray
         The energy decay curve in dB.
     """
-    # Remove filtering artefacts (last 5 permille)
+    # Remove filtering artifacts (last 5 permille)
     out = discard_last_n_percent(x, 0.5)
-    # Filter the signal with a fractional octave filterbank if requested
     if use_filterbank:
+        # Use filterbank to compute EDCs
         out = filterbank(out, n_fractions, f_min=f_min, f_max=f_max, sample_rate=fs, compensate_energy=compensate_fbnk_energy)[0]
-
-    ### WRITE YOUR CODE HERE ###
     # Compute EDCs using Schroeder backward integration
+    out = schroeder_backward_int(out, energy_norm, subtract_noise, noise_level)[0]
     # Convert to dB scale
+    out = 10 * np.log10(out)
 
     return out
 
@@ -139,10 +144,12 @@ def estimate_rt60(
         - valid_range : NDArray
             Boolean array indicating the samples used for the fit
     """
-    ### WRITE YOUR CODE HERE ###
     # Select the range of EDC values between decay_start_db and decay_end_db and save it in valid_range
+    valid_range = (edc_db < decay_start_db) & (edc_db > decay_end_db)
     # Perform linear regression with scipy.stats's linregress on the selected range to estimate decay slope and intercept
+    slope, intercept, *_ = linregress(time[valid_range], edc_db[valid_range])
     # Calculate RT60 as the time required for a 60 dB decay
+    rt60 = -60 / slope
     return rt60, slope, intercept, valid_range
 
 
@@ -171,13 +178,14 @@ def compute_edr(
     NDArray
         The energy decay relief in dB.
     """
-    # Remove filtering artefacts (last 5 permille)
+    # Remove filtering artifacts (last 5 permille)
     out = discard_last_n_percent(x, 0.5)
-
-    ### WRITE YOUR CODE HERE ###
     # Compute the Short-Time Fourier Transform (STFT) magnitude
+    _, _, stft_mag = spectrogram(out, nperseg=1028, noverlap=int(1028*0.75), mode='magnitude')
     # Apply Schroeder backward integration to each time-frequency bin
+    out = schroeder_backward_int(stft_mag, energy_norm, subtract_noise, noise_level)[0]
     # Convert energy to decibel (dB) scale, adding a small offset to avoid log(0)
+    out = 10 * np.log10(out + 1e-32)
 
     return out
 
@@ -248,12 +256,14 @@ def normalized_echo_density(
     window_func = window_func / sum(window_func)
     # Slide window across RIR and compute normalized echo density
     for cursor in range(len(rir)):
-        pass # REMOVE THIS LINE AND IMPLEMENT THE FUNCTION
-        ### WRITE YOUR CODE HERE ###
         # Extract the current frame from the padded RIR
-        # Compute the weighted standard deviation of the frame
+        frame = padded_rir[cursor:cursor + window_length_samps]
+        # Compute the weighted standard deviation of the frame    
+        std = weighted_std(frame, window_func, use_local_avg)
         # Count the number of samples above the weighted standard deviation, weighted by the window function
+        count = ((np.abs(frame) > std) * window_func).sum()
         # Normalize the count by the ERFC constant and store it in the output array
+        output[cursor] = (1 / ERFC) * count
     # Remove padding to match original RIR length
     ned = output[:-window_length_samps]
     return ned
