@@ -20,12 +20,24 @@ and Gloria Dal Santo (Aalto University). We will upload assignments and code her
 - The instructions for assignments are in the [assignments](assignments/) folder. The assignments span a week each, but are divided in several parts.
 - We recommend you download the data needed for the assignments in thed [data](data/) folder. The link to the online folder containing the data has been shared with you.
 
-### Instructions for submission
+### Instructions for daily pulls
 
-- Commit the changes you make (`git add -u` + `git commit -m`) and push it to the forked repo with `git push origin <your branch name>`. 
-	- The default branch name is `main`. We recommend you create your own branch with `git checkout -b <your branch name>`.
+Solutions we will release should be in the `main` branch. Your code for daily assignments should be in different branches with names `day#` (# stands for number).
+
+#### Forked repo
+
+- The default branch name is `main`. Each day, create your own branch with `git checkout -b day#`.
+- Commit the changes you make (`git add -u` + `git commit -m <commit-message>`). 
 - We will release the solutions to the assignments daily. To keep up with those, configure git to sync your fork with the original repository.
 	- First add the original repository as upstream, `git remote add upstream https://github.com/orchidas/VAIAWorkshop25Public.git`
-	- Now you can do daily pulls with `git pull upstream main`. This will pull the latest solutions into your `main` branch.
-	- To merge upstream `main` with your branch, pull the main branch, checkout your branch, and run `git merge main`. You will have to fix merge conflicts manually. We recommend doing this only if you are comfortable with git.
+	- Check out the main branch with `git checkout main`. You can do daily pulls of the solutions with `git pull upstream main`.
+	- OPTIONAL -  To merge upstream `main` with your branch, pull the main branch, checkout your branch, and run `git merge main`. You will have to fix merge conflicts manually. **We recommend doing this only if you are comfortable with git.**
+
+
+#### Cloned repo without fork
+
+- The default branch name is `main`. Each day, create your own branch with `git checkout -b day#` for each day.
+- Commit the changes you make (`git add -u` + `git commit -m <commit-message>`). 
+- Check out the main branch with `git checkout main` and pull the daily solutions to your main branch with `git pull origin main`.
+
 
