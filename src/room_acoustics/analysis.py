@@ -37,16 +37,16 @@ def schroeder_backward_int(
 
     ### WRITE YOUR CODE HERE ###
     # Flip the input array to prepare for backward integration
-    # Subtract noise power from the squared signal if requested (This will use in section 4.3)
-    # Compute cumulative sum (integration) over the reversed array
-    # Flip the result back to original order
-
+    x = np.asarray(x)
+    x_sq = x ** 2
+    if subtract_noise:
+        x_sq = np.maximum(x_sq - noise_level ** 2, 0)
+    out = np.flip(np.cumsum(np.flip(x_sq, axis=-1), axis=-1), axis=-1)
     # Normalize the energy if requested
     if energy_norm:
         norm_vals = np.max(out, keepdims=True, axis=-1)  # per channel
     else:
         norm_vals = np.ones_like(out)
-
     return out / norm_vals, norm_vals
 
 
@@ -101,9 +101,10 @@ def compute_edc(
 
     ### WRITE YOUR CODE HERE ###
     # Compute EDCs using Schroeder backward integration
-    # Convert to dB scale
-
-    return out
+    edc, _ = schroeder_backward_int(out, energy_norm=energy_norm, subtract_noise=subtract_noise, noise_level=noise_level)
+    # Convert to dB scale, add small epsilon to avoid log(0)
+    edc_db = 10 * np.log10(edc + 1e-12)
+    return edc_db
 
 
 def estimate_rt60(
@@ -141,8 +142,12 @@ def estimate_rt60(
     """
     ### WRITE YOUR CODE HERE ###
     # Select the range of EDC values between decay_start_db and decay_end_db and save it in valid_range
-    # Perform linear regression with scipy.stats's linregress on the selected range to estimate decay slope and intercept
+    valid_range = (edc_db <= decay_start_db) & (edc_db >= decay_end_db)
+    if not np.any(valid_range):
+        raise ValueError("No valid range found for RT60 estimation. Check decay_start_db and decay_end_db.")
+    slope, intercept, _, _, _ = linregress(time[valid_range], edc_db[valid_range])
     # Calculate RT60 as the time required for a 60 dB decay
+    rt60 = -60.0 / slope if slope != 0 else np.inf
     return rt60, slope, intercept, valid_range
 
 
@@ -176,10 +181,14 @@ def compute_edr(
 
     ### WRITE YOUR CODE HERE ###
     # Compute the Short-Time Fourier Transform (STFT) magnitude
-    # Apply Schroeder backward integration to each time-frequency bin
+    f, t, Sxx = spectrogram(out, nperseg=256, noverlap=128, mode='magnitude')
+    # Apply Schroeder backward integration to each frequency bin
+    edr = np.zeros_like(Sxx)
+    for i in range(Sxx.shape[0]):
+        edr[i], _ = schroeder_backward_int(Sxx[i], energy_norm=energy_norm, subtract_noise=subtract_noise, noise_level=noise_level)
     # Convert energy to decibel (dB) scale, adding a small offset to avoid log(0)
-
-    return out
+    edr_db = 10 * np.log10(edr + 1e-12)
+    return edr_db
 
 
 def normalized_echo_density(
@@ -248,11 +257,15 @@ def normalized_echo_density(
     window_func = window_func / sum(window_func)
     # Slide window across RIR and compute normalized echo density
     for cursor in range(len(rir)):
-        ### WRITE YOUR CODE HERE ###
         # Extract the current frame from the padded RIR
+        frame = padded_rir[cursor:cursor + window_length_samps]
         # Compute the weighted standard deviation of the frame
+        std = weighted_std(frame, window_func, use_local_avg)
         # Count the number of samples above the weighted standard deviation, weighted by the window function
+        above_std = (np.abs(frame) > std).astype(float)
+        weighted_count = np.sum(above_std * window_func)
         # Normalize the count by the ERFC constant and store it in the output array
+        output[cursor + half_window] = weighted_count / ERFC
     # Remove padding to match original RIR length
-    ned = output[:-window_length_samps]
+    ned = output[half_window:half_window + len(rir)]
     return ned
