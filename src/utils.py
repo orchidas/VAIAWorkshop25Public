@@ -221,3 +221,37 @@ def ms_to_samps(ms: Union[float, ArrayLike], fs: float) -> Union[int, NDArray]:
         return int(samp)
     else:
         return samp.astype(np.int32)
+    
+
+def db2lin(dB: Union[float, NDArray]) -> Union[float, NDArray]:
+    """
+    Convert decibels to linear scale.
+    
+    Parameters
+    ----------
+    dB : float or NDArray
+        Value(s) in decibels.
+    
+    Returns
+    -------
+    float or NDArray
+        Value(s) in linear scale.
+    """
+    return 10 ** (dB / 20)
+
+
+def lin2db(linear: Union[float, NDArray]) -> Union[float, NDArray]:
+    """
+    Convert linear scale to decibels.
+    
+    Parameters
+    ----------
+    linear : float or NDArray
+        Value(s) in linear scale.
+    
+    Returns
+    -------
+    float or NDArray
+        Value(s) in decibels.
+    """
+    return 20 * np.log10(linear + 1e-32)  # Avoid log(0) by adding a small constant 

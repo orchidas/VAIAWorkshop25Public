@@ -267,3 +267,24 @@ def normalized_echo_density(
     # Remove padding to match original RIR length
     ned = output[:-window_length_samps]
     return ned
+
+
+def rt2slope(rt: float, fs: int) -> float:
+    """
+    Convert reverberation time (RT60) to slope in dB/s.
+
+    Parameters
+    ----------
+    rt : float
+        Reverberation time in seconds.
+    fs : int
+        Sampling rate in Hz.
+
+    Returns
+    -------
+    float
+        Slope in dB/s.
+    """
+    if rt <= 0:
+        raise ValueError("RT60 must be a positive value.")
+    return -60 / rt / fs
