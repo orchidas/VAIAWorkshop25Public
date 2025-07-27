@@ -3,7 +3,109 @@ import numpy as np
 import soundfile as sf
 import scipy
 from numpy.typing import NDArray, ArrayLike
-from typing import Union
+from typing import Any, Optional, Tuple, Union
+
+
+def cart2sph(x: Union[NDArray, float],
+             y: Union[NDArray, float],
+             z: Union[NDArray, float],
+             axis: int = -1,
+             degrees: bool = True) -> NDArray:
+    """
+    Convert cartesian coordinates to spherical coordinates.
+
+    Parameters
+    ----------
+    x : Union[NDArray, float]
+        X coordinate(s).
+    y : Union[NDArray, float]
+        Y coordinate(s).
+    z : Union[NDArray, float]
+        Z coordinate(s).
+    axis : int, optional
+        Axis along which to stack the result (default is -1).
+    degrees : bool, optional
+        If True, return angles in degrees (default is True).
+
+    Returns
+    -------
+    NDArray
+        Spherical coordinates (azimuth, elevation, r).
+    """
+    x, y, z = np.broadcast_arrays(x, y, z)
+    azimuth = np.arctan2(y, x)
+    elevation = np.arctan2(z, np.sqrt(x**2 + y**2))
+    r = np.sqrt(x**2 + y**2 + z**2)
+
+    if degrees:
+        azimuth = np.degrees(azimuth)
+        elevation = np.degrees(elevation)
+
+    return np.stack((azimuth, elevation, r), axis=axis)
+
+
+def sph2cart(azimuth: Union[NDArray, float],
+             elevation: Union[NDArray, float],
+             r: Union[NDArray, float],
+             axis: int = -1,
+             degrees: bool = True) -> NDArray:
+    """
+    Convert spherical coordinates to cartesian coordinates.
+
+    Parameters
+    ----------
+    azimuth : Union[NDArray, float]
+        Azimuth angle(s) in degrees or radians.
+    elevation : Union[NDArray, float]
+        Elevation angle(s) in degrees or radians.
+    r : Union[NDArray, float]
+        Radius value(s).
+    axis : int, optional
+        Axis along which to stack the result (default is -1).
+    degrees : bool, optional
+        If True, input angles are in degrees (default is True).
+
+    Returns
+    -------
+    NDArray
+        Cartesian coordinates (x, y, z).
+    """
+    azimuth, elevation, r = np.broadcast_arrays(azimuth, elevation, r)
+    if degrees:
+        azimuth = np.radians(azimuth)
+        elevation = np.radians(elevation)
+    x = r * np.cos(elevation) * np.cos(azimuth)
+    y = r * np.cos(elevation) * np.sin(azimuth)
+    z = r * np.sin(elevation)
+    return np.stack((x, y, z), axis=axis)
+
+
+def unpack_coordinates(
+        coord_matrix: NDArray,
+        axis: int = -1) -> Tuple[ArrayLike, ArrayLike, ArrayLike]:
+    """
+    Unpack a coordinate matrix into separate arrays for each dimension.
+
+    Parameters
+    ----------
+    coord_matrix : NDArray
+        Coordinate matrix of shape (..., 3).
+    axis : int, optional
+        Axis along which to unpack (default is -1).
+
+    Returns
+    -------
+    tuple of ArrayLike
+        Tuple of arrays (dim1, dim2, dim3) corresponding to the three coordinate dimensions.
+    """
+    if axis != -1:
+        coord_matrix = coord_matrix.T
+
+    dim1 = coord_matrix[:, 0]
+    dim2 = coord_matrix[:, 1]
+    dim3 = coord_matrix[:, 2]
+
+    return dim1, dim2, dim3
 
 
 def audioread(rir_path: str, to_mono: bool = True) -> tuple[np.ndarray, int]:
@@ -78,15 +180,13 @@ def find_onset(rir: NDArray) -> int:
     return (win_len * hop * (onset_idx - 1)).astype(int)
 
 
-def filterbank(
-    x: np.ndarray,
-    n_fractions: int = 1,
-    f_min: int = 63,
-    f_max: int = 16000,
-    sample_rate: int = 48000,
-    compensate_energy: bool = True, 
-    filter_type: str = 'pyfar'
-) -> np.ndarray:
+def filterbank(x: np.ndarray,
+               n_fractions: int = 1,
+               f_min: int = 63,
+               f_max: int = 16000,
+               sample_rate: int = 48000,
+               compensate_energy: bool = True,
+               filter_type: str = 'pyfar') -> np.ndarray:
     """
     Apply a fractional octave filterbank to a signal.
 
@@ -118,10 +218,9 @@ def filterbank(
 
     # Get center frequencies for fractional octave bands
     center_freqs = pf.dsp.filter.fractional_octave_frequencies(
-        num_fractions=n_fractions, 
-        frequency_range=(f_min, f_max), 
-        return_cutoff=False
-    )[0]
+        num_fractions=n_fractions,
+        frequency_range=(f_min, f_max),
+        return_cutoff=False)[0]
 
     if filter_type == 'sos':
         # Design SOS filters for each band
@@ -131,31 +230,36 @@ def filterbank(
             if abs(center_freq) < 1e-6:
                 # Lowpass for lowest band
                 f_cutoff = (1 / np.sqrt(2)) * center_freqs[band_idx + 1]
-                sos = scipy.signal.butter(
-                    N=order, Wn=f_cutoff, fs=sample_rate,
-                    btype='lowpass', output='sos'
-                )
+                sos = scipy.signal.butter(N=order,
+                                          Wn=f_cutoff,
+                                          fs=sample_rate,
+                                          btype='lowpass',
+                                          output='sos')
             elif abs(center_freq - sample_rate / 2) < 1e-6:
                 # Highpass for highest band
                 f_cutoff = np.sqrt(2) * center_freqs[band_idx - 1]
-                sos = scipy.signal.butter(
-                    N=order, Wn=f_cutoff, fs=sample_rate,
-                    btype='highpass', output='sos'
-                )
+                sos = scipy.signal.butter(N=order,
+                                          Wn=f_cutoff,
+                                          fs=sample_rate,
+                                          btype='highpass',
+                                          output='sos')
             else:
                 # Bandpass for intermediate bands
                 f_cutoff = center_freq * np.array([1 / np.sqrt(2), np.sqrt(2)])
-                sos = scipy.signal.butter(
-                    N=order, Wn=f_cutoff, fs=sample_rate,
-                    btype='bandpass', output='sos'
-                )
+                sos = scipy.signal.butter(N=order,
+                                          Wn=f_cutoff,
+                                          fs=sample_rate,
+                                          btype='bandpass',
+                                          output='sos')
             sos_filters.append(sos)
 
         # Apply each filter to the signal
-        filtered = [scipy.signal.sosfilt(sos, x, axis=-1) for sos in sos_filters]
+        filtered = [
+            scipy.signal.sosfilt(sos, x, axis=-1) for sos in sos_filters
+        ]
         y = np.stack(filtered, axis=-2)
 
-    elif filter_type == 'pyfar': 
+    elif filter_type == 'pyfar':
         # Get frequency responses for each band
         f_bank = pf.dsp.filter.fractional_octave_bands(
             pf.Signal(impulse, sample_rate),
@@ -170,7 +274,7 @@ def filterbank(
         for i_band in range(f_bank.shape[1]):
             filt = np.pad(f_bank[:, i_band], (0, X.shape[0] - f_bank.shape[0]))
             if compensate_energy:
-                norm = np.sqrt(np.sum(np.abs(filt) ** 2))
+                norm = np.sqrt(np.sum(np.abs(filt)**2))
                 Y_band = X * filt / norm
             else:
                 Y_band = X * filt
@@ -179,7 +283,8 @@ def filterbank(
     return y, center_freqs
 
 
-def discard_last_n_percent(x: np.ndarray, n_percent: float = 5.0) -> np.ndarray:
+def discard_last_n_percent(x: np.ndarray,
+                           n_percent: float = 5.0) -> np.ndarray:
     """
     Discard the last n_percent of a 1D array.
 
@@ -221,37 +326,38 @@ def ms_to_samps(ms: Union[float, ArrayLike], fs: float) -> Union[int, NDArray]:
         return int(samp)
     else:
         return samp.astype(np.int32)
-    
+
 
 def db2lin(dB: Union[float, NDArray]) -> Union[float, NDArray]:
     """
     Convert decibels to linear scale.
-    
+
     Parameters
     ----------
     dB : float or NDArray
         Value(s) in decibels.
-    
+
     Returns
     -------
     float or NDArray
         Value(s) in linear scale.
     """
-    return 10 ** (dB / 20)
+    return 10**(dB / 20)
 
 
 def lin2db(linear: Union[float, NDArray]) -> Union[float, NDArray]:
     """
     Convert linear scale to decibels.
-    
+
     Parameters
     ----------
     linear : float or NDArray
         Value(s) in linear scale.
-    
+
     Returns
     -------
     float or NDArray
         Value(s) in decibels.
     """
-    return 20 * np.log10(linear + 1e-32)  # Avoid log(0) by adding a small constant 
+    return 20 * np.log10(
+        linear + 1e-32)  # Avoid log(0) by adding a small constant
