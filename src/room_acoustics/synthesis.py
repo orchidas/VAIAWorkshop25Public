@@ -56,9 +56,9 @@ def decay_kernel(
     Parameters
     ----------
     t_values : float or ArrayLike
-        The T60 values.
+        The T60 values. Should have shape (B, K) where B is the number of frequency bands and K is the number of RIRs.
     time : ArrayLike
-        Time vector.
+        Time vector of length T.
     fs : float
         Sampling rate.
     normalize_envelope : bool, optional
@@ -69,7 +69,7 @@ def decay_kernel(
     Returns
     -------
     NDArray
-        Exponential decay kernel of shape (..., len(time)), or with noise if `add_noise` is True.
+        Exponential decay kernel of shape (B, T, K), or with noise if `add_noise` is True.
 
     Notes
     -----
@@ -80,9 +80,11 @@ def decay_kernel(
     if len(t_values.shape) == 1:
         t_values = np.expand_dims(t_values, axis=0)
 
-    #### WRITE YOUR CODE HERE ####
     # calculate the decay time constant tau from T60 - save them in a variable called tau_vals
+    tau_vals = np.log(10**6) / t_values
+
     # calculate the exponential decay kernel
+    exponential = np.exp(-np.einsum("bk,t->btk", tau_vals, time))
 
     # normalise the kernel to have unit energy
     if normalize_envelope:
@@ -92,11 +94,15 @@ def decay_kernel(
     if add_noise:
         # calculate noise
         ir_len = len(time)
-        ### WRITE YOUR CODE HERE ####
-        # generate the kernel for the noise, which should be a linearly decaying signal from ir_len to 0
-        # tile it along the exponential decay kernel 
 
+        # generate the kernel for the noise, which should be a linearly decaying signal from ir_len to 0
+        noise = np.linspace(ir_len, 0, ir_len) 
+        noise = np.expand_dims(noise, axis=(0, -1))
+        noise = np.tile(
+            noise, (exponential.shape[0], 1, 1))  # repeat noise along all rirs
+        
+        # concatenate it to the exponential decay kernels
         exponential = np.concatenate((exponential, noise), axis=-1)
-    
+
     return exponential
 
