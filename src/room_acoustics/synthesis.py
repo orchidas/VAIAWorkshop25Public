@@ -88,7 +88,7 @@ def decay_kernel(
 
     # normalise the kernel to have unit energy
     if normalize_envelope:
-        exponential = np.einsum("ntb, nb -> ntb", exponential,
+        exponential = np.einsum("btk, bk -> btk", exponential,
                                 np.sqrt((1 - np.exp(-2 * tau_vals / fs))))
     # construct the decay kernel
     if add_noise:
