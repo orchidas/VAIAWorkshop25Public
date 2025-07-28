@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from scipy.fft import irfft, rfft
 import spaudiopy as spa
 from tqdm import tqdm
+from loguru import logger
 
 from utils import cart2sph
 from spatial_audio.hrtf import HRIRSet
