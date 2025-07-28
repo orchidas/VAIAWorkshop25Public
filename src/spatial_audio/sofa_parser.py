@@ -195,7 +195,7 @@ class HRIRReader:
 
         # euclidean distance between desired and available views
         dist = np.zeros((self.num_meas, num_views))
-        des_ir_matrix = np.zeros((num_views, self.ir_data.shape[1:]),
+        des_ir_matrix = np.zeros((num_views, *self.ir_data.shape[1:]),
                                  dtype=float)
 
         if coord_type == "spherical":
@@ -205,7 +205,7 @@ class HRIRReader:
         # find index of view that minimuses the error from the desied view
         for k in range(num_views):
             dist[:, k] = np.sqrt(
-                np.sum((self.listener_view - self.des_listener_view[k, :])**2,
+                np.sum((self.listener_view - des_listener_view[k, :])**2,
                        axis=axis))
             closest_idx = np.argmin(dist[:, k])
             des_ir_matrix[k, ...] = self.ir_data[closest_idx, ...]
