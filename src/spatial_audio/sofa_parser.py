@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
+from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8,6 +9,8 @@ import spaudiopy as spa
 from tqdm import tqdm
 
 from utils import cart2sph
+from spatial_audio.hrtf import HRIRSet
+import sofar
 
 
 class HRIRReader:
