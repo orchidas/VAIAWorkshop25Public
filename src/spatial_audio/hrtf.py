@@ -32,6 +32,7 @@ class HRIRSet:
     source_view : Optional[NDArray], optional
         Source view coordinates in spherical coordinate system.
     """
+
     fs: int  # sample rate
     num_rotations: int  # number of data points in listener view
     ir_len_samps: int  # length of the HRIRs
