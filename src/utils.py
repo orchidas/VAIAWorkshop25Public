@@ -267,10 +267,11 @@ def filterbank(x: np.ndarray,
             frequency_range=(f_min, f_max),
         ).freq.T  # shape: (filter_length, n_bands)
         f_bank = np.squeeze(f_bank)
+        # Prepare output array
         y = np.zeros((f_bank.shape[1], *x.shape))
 
         # FFT of input signal
-        X = np.fft.rfft(x, n=x.shape[0] * 2 - 1, axis=0)
+        X = np.fft.rfft(x, n=x.shape[0], axis=0)
         for i_band in range(f_bank.shape[1]):
             filt = np.pad(f_bank[:, i_band], (0, X.shape[0] - f_bank.shape[0]))
             if compensate_energy:
