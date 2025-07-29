@@ -6,12 +6,12 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.fft import irfft, rfft
 import spaudiopy as spa
+import sofar
 from tqdm import tqdm
 from loguru import logger
 
 from utils import cart2sph, sph2cart, unpack_coordinates
 from spatial_audio.hrtf import HRIRSet
-import sofar
 
 
 class HRIRReader:
