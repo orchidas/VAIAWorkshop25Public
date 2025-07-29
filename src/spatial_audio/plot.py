@@ -95,8 +95,8 @@ def plot_spherical_harmonics(orders_list: List):
 
         for i in range(n_coeffs):
             coeff = Y[:, i].reshape(theta_grid.shape)
-            coeff /= np.max(np.abs(coeff))  # normalize for color scale
-            r = 1  # deform radius
+            coeff /= np.max(np.abs(coeff))  # normalize between +-1
+            r = 1
 
             X = r * x
             Y_ = r * y
@@ -107,7 +107,9 @@ def plot_spherical_harmonics(orders_list: List):
                 X,
                 Y_,
                 Z,
-                facecolors=plt.cm.seismic((coeff + 1) / 2),
+                facecolors=plt.cm.seismic(
+                    (coeff + 1) /
+                    2),  # this maps coeffs to 0 to 1 from -1 to 1
                 rstride=1,
                 cstride=1,
                 antialiased=True,
