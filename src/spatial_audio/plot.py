@@ -75,27 +75,28 @@ def plot_spherical_harmonics(orders_list: List):
     n_theta = 200
     n_phi = 100
     theta = np.linspace(0, 2 * np.pi, n_phi)  # azimuth [0, 2π]
-    phi = np.linspace(0, np.pi, n_theta)  # colatitude [0, π]
+    phi = np.linspace(-np.pi / 2, np.pi / 2, n_theta)  # colatitude [0, π]
     theta_grid, phi_grid = np.meshgrid(theta, phi)
 
     # Convert to cartesian for plotting - size is n_theta x n_phi
     # Convert to cartesian for plotting
-    x = np.sin(theta_grid) * np.cos(phi_grid)
-    y = np.sin(theta_grid) * np.sin(phi_grid)
-    z = np.cos(theta_grid)
+    x = np.cos(theta_grid) * np.cos(phi_grid)
+    y = np.sin(theta_grid) * np.cos(phi_grid)
+    z = np.sin(phi_grid)
 
     # Loop through SH orders 1 to 4
     for order in orders_list:
         n_coeffs = (order + 1)**2
         # flatten the grid for sh evaluation
-        Y = spa.sph.sh_matrix(order, theta_grid.ravel(), phi_grid.ravel(),
+        Y = spa.sph.sh_matrix(order, theta_grid.ravel(),
+                              np.pi / 2 - phi_grid.ravel(),
                               'real')  # shape (N_pts, (N+1)^2)
         fig = plt.figure(figsize=(6, 3 * n_coeffs))
 
         for i in range(n_coeffs):
             coeff = Y[:, i].reshape(theta_grid.shape)
             coeff /= np.max(np.abs(coeff))  # normalize for color scale
-            r = 1 + 0.3 * coeff  # deform radius
+            r = 1  # deform radius
 
             X = r * x
             Y_ = r * y
