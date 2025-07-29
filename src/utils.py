@@ -108,6 +108,54 @@ def unpack_coordinates(
     return dim1, dim2, dim3
 
 
+def rir_from_sweep(meas_sweep: Union[ArrayLike, NDArray],
+                   dry_sweep: ArrayLike,
+                   fs: float,
+                   start_time_ms: float = 1000,
+                   end_time_ms: float = 10000,
+                   extra_padding_ms: float = 1000) -> NDArray:
+    """
+    Deconvolution to get RIRs from measured and dry sweep signals
+    Args:
+        meas_sweep (ArrayLike/NDArray): measured sine sweep signals in a room, of shape 
+                                        num_time_samples x num_channels, or num_time_samples,
+        dry_sweep (ArrayLike): dry sine sweep signal, of shape num_time_samples,
+        fs (float): sampling rate of sweep signals
+        start_time_ms (float): trim silence before dry sweep
+        end_time_ms (float): length of sweep in ms
+        extra_padding (float): length of the measured signal should be 
+                               longer than the sweep length by this much
+    Returns:
+        NDArray: Deconvolved RIRs of shape (num_time_samples x num_channels) or num_time_samples,
+    """
+    dry_sweep = dry_sweep[:, np.newaxis]
+    if meas_sweep.ndim > 1:
+        num_channels = meas_sweep.shape[1]
+        dry_sweep = np.repeat(dry_sweep, num_channels, axis=-1)
+    else:
+        meas_sweep = meas_sweep[:, np.newaxis]
+
+    #### WRITE YOUR CODE HERE ####
+
+    # truncate sweep signals from start_time_ms to start_time_ms + end_time_ms
+    start_time_samps = ms_to_samps(start_time_ms, fs)
+    end_time_samps = start_time_samps + ms_to_samps(end_time_ms, fs)
+    extra_padding_samps = ms_to_samps(extra_padding_ms, fs)
+
+    # add some extra padding at the end to the measured sweep signal
+    meas_sweep_trunc = meas_sweep[start_time_samps:end_time_samps +
+                                  extra_padding_samps, :]
+    dry_sweep_trunc = dry_sweep[start_time_samps:end_time_samps, :]
+
+    #### WRITE YOUR CODE HERE ####
+
+    # time flip the dry sweep signal
+
+    # convolve the measured sweep signals and the time flipped dry sweep signal
+
+    # return the RIRs
+
+
 def audioread(rir_path: str, to_mono: bool = True) -> tuple[np.ndarray, int]:
     """
     Read an audio file and optionally convert it to mono.
