@@ -61,6 +61,47 @@ class HRIRSet:
         # normalise for peak value 1
         self.hrir_data /= np.max(np.abs(self.hrir_data))
 
+    def get_spherical_harmonic_representation(self,
+                                              ambi_order: int) -> NDArray:
+        """
+        Get the spherical harmonic representation of the HRTFs using specified ambisonics order.
+
+        Parameters
+        ----------
+        ambi_order : int
+            Spherical harmonics order.
+
+        Returns
+        -------
+        NDArray
+            The HRIRs in the SH domain of shape (num_ambi_channels, 2, num_time_samples).
+        """
+        # 1. Compute HRTFs from time-domain HRIRs
+        fft_size = 2**int(np.ceil(np.log2(self.ir_len_samps)))
+
+        #### WRITE YOUR CODE HERE ####
+
+        # Get the FFT of the HRIRs and save it as the variable hrtfs
+
+        # Create the spherical grid
+        incidence_az = np.deg2rad(self.listener_view[..., 0])
+        # zenith angle is different from elevation angle
+        incidence_zen = np.deg2rad(90 -
+                                   self.listener_view[..., 1])  # zenith angle
+
+        # Get quadrature weights from spa.grids.calculate_grid_weights
+        # and create a diagonal matrix out of them, call it W.
+
+        # Get spherical harmonic matrix, Y, using incidence_az, incidence_zen - shape (num_dirs, num_sh_channels)
+
+        # Calculate (WY)^\dagger W
+
+        # Multiply (WY)^\dagger W with hrtfs to get output of shape num_sh_channels, 2, num_freq_bins
+
+        # Take inverse FFT to get SH domain BRIR of shape: (num_sh_channels, 2, num_time_samples) and return it
+
+        return
+
 
 class HRIRInterpolator:
     """
