@@ -3,6 +3,7 @@ import numpy as np
 import soundfile as sf
 import scipy
 from numpy.typing import NDArray, ArrayLike
+from scipy.signal import fftconvolve
 from typing import Any, Optional, Tuple, Union
 
 
@@ -135,8 +136,6 @@ def rir_from_sweep(meas_sweep: Union[ArrayLike, NDArray],
     else:
         meas_sweep = meas_sweep[:, np.newaxis]
 
-    #### WRITE YOUR CODE HERE ####
-
     # truncate sweep signals from start_time_ms to start_time_ms + end_time_ms
     start_time_samps = ms_to_samps(start_time_ms, fs)
     end_time_samps = start_time_samps + ms_to_samps(end_time_ms, fs)
@@ -150,10 +149,16 @@ def rir_from_sweep(meas_sweep: Union[ArrayLike, NDArray],
     #### WRITE YOUR CODE HERE ####
 
     # time flip the dry sweep signal
+    inverse_sweep_trunc = np.flip(dry_sweep_trunc, axis=0)
 
     # convolve the measured sweep signals and the time flipped dry sweep signal
+    rirs = fftconvolve(meas_sweep_trunc,
+                       inverse_sweep_trunc,
+                       mode='full',
+                       axes=0)
 
     # return the RIRs
+    return np.squeeze(rirs)
 
 
 def audioread(rir_path: str, to_mono: bool = True) -> tuple[np.ndarray, int]:

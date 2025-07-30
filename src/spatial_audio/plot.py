@@ -79,7 +79,6 @@ def plot_spherical_harmonics(orders_list: List):
     theta_grid, phi_grid = np.meshgrid(theta, phi)
 
     # Convert to cartesian for plotting - size is n_theta x n_phi
-    # Convert to cartesian for plotting
     x = np.cos(theta_grid) * np.cos(phi_grid)
     y = np.sin(theta_grid) * np.cos(phi_grid)
     z = np.sin(phi_grid)
@@ -96,8 +95,10 @@ def plot_spherical_harmonics(orders_list: List):
         for i in range(n_coeffs):
             coeff = Y[:, i].reshape(theta_grid.shape)
             coeff /= np.max(np.abs(coeff))  # normalize between +-1
-            r = 1
 
+            # radius of sphere
+            r = 1
+            # to plot the sphere
             X = r * x
             Y_ = r * y
             Z = r * z
