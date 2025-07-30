@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 from pathlib import Path
+import time
 
 import numpy as np
 from numpy.typing import NDArray, ArrayLike
