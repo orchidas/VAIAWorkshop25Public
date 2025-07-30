@@ -89,7 +89,8 @@ class HRIRSet:
         incidence_zen = np.deg2rad(90 -
                                    self.listener_view[..., 1])  # zenith angle
 
-        # Get quadrature weights and create a diagonal matrix out of them, call it W.
+        # Get quadrature weights from spa.grids.calculate_grid_weights
+        # and create a diagonal matrix out of them, call it W.
 
         # Get spherical harmonic matrix, Y, using incidence_az, incidence_zen - shape (num_dirs, num_sh_channels)
 
@@ -97,7 +98,7 @@ class HRIRSet:
 
         # Multiply (WY)^\dagger W with hrtfs to get output of shape num_sh_channels, 2, num_freq_bins
 
-        # Take inverse FFT to get SH domain HRIR of shape: (num_sh_channels, 2, num_time_samples) and return it
+        # Take inverse FFT to get SH domain BRIR of shape: (num_sh_channels, 2, num_time_samples) and return it
 
         return
 
