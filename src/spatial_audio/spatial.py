@@ -129,3 +129,165 @@ def convert_srir_to_brir(srirs: NDArray, hrir_sh: NDArray,
             brirs[rec_pos_idx, ori_idx, ...] = cur_brir
 
     return brirs
+
+
+#####################################################################
+
+
+class VBAP(ABC):
+    """
+    Base class to do 3D Vector based amplitude panning for a given loudspeaker grid.
+    """
+
+    def __init__(self, num_loudspeakers: int, emitter_positions: NDArray):
+        """
+        Parameters
+        ----------
+        num_loudspeakers : int
+            Number of loudspeakers in the layout.
+        emitter_positions : NDArray
+            Positions of the loudspeakers (2D or 3D), must be (num_loudspeakers, ndim).
+        """
+        self.num_loudspeakers = num_loudspeakers
+        self.emitter_positions = emitter_positions
+
+    @abstractmethod
+    def process(self, target_dir: NDArray) -> NDArray:
+        """
+        Abstract method for processing.
+
+        Parameters
+        ----------
+        target_dir : NDArray
+            Target direction vector.
+
+        Returns
+        -------
+        NDArray
+            Output gain vector for loudspeakers.
+        """
+        pass
+
+
+class VBAP_3D(VBAP):
+    """
+    Class for doing 3D panning with VBAP with an arbitrary number of loudspeakers.
+    """
+
+    def __init__(self, num_loudspeakers: int, emitter_positions: NDArray):
+        """
+        Parameters
+        ----------
+        num_loudspeakers : int
+            Number of loudspeakers in the layout.
+        emitter_positions : NDArray
+            Positions of the loudspeakers (2D or 3D) in Cartesian coordinates, must be (num_loudspeakers, ndim).
+        """
+        super().__init__(num_loudspeakers, emitter_positions)
+        self.find_adjacent_triplets()
+        # logger.debug(self.loudspeaker_triplets)
+        self.find_triangle_inverse()
+        # logger.debug(self.matrix_inverse)
+        self.loudspeaker_gains = np.zeros(num_loudspeakers)
+        # are there loudspeakers below the ear level
+        self.find_speakers_below_ear_level()
+
+    def find_speakers_below_ear_level(self):
+        """Check if any of the loudspeakers are below the ear level"""
+        # find the elevation of all loudspeakers
+        sph_coord = cart2sph(self.emitter_positions[:, 0],
+                             self.emitter_positions[:, 1],
+                             self.emitter_positions[:, 2])
+        el = sph_coord[:, 1]
+        self.is_speaker_below_ear_level = el < 0.0
+
+    def find_adjacent_triplets(self):
+        """Find all adjacent triplets of loudspeakers in setup using a convex hull"""
+        # points must be (npoints, ndim)
+        convex_hull = ConvexHull(self.emitter_positions)
+        all_triplets = convex_hull.simplices
+        self.loudspeaker_triplets = []
+
+        # a triangle cannot be made of speakers on the floor
+        for triplet in all_triplets:
+            if np.linalg.det(self.emitter_positions[triplet]) != 0:
+                self.loudspeaker_triplets.append(triplet)
+
+    def find_triangle_inverse(self):
+        """Find the inverse matrix formed from an active triangle"""
+        self.matrix_inverse = {}
+        for triplet in self.loudspeaker_triplets:
+            self.matrix_inverse[tuple(triplet)] = np.linalg.inv(
+                self.emitter_positions[triplet])
+
+    def find_active_triangle(self,
+                             target_dir: ArrayLike) -> Tuple[NDArray, NDArray]:
+        """
+        Find active triangle of loudspeakers for a target direction vector.
+
+        Parameters
+        ----------
+        target_dir : NDArray
+            Target direction vector in 3D cartesian coordinates.
+
+        Returns
+        -------
+        tuple of NDArray, NDArray
+            The indices of the active loudspeaker triplet, and their corresponding gains.
+        """
+        # we calculate gains for all simplices of measurements
+        k = 0
+        gains_all = np.zeros((len(self.loudspeaker_triplets), 3), dtype=float)
+        for triplet in self.loudspeaker_triplets:
+            gains_all[k, :] = np.matmul(self.matrix_inverse[tuple(triplet)].T,
+                                        target_dir)
+            k += 1
+
+        # catch any unstable gains
+        unstable_gains = gains_all > 1e10
+        if np.any(unstable_gains):
+            gains_all[unstable_gains] = -1.0
+
+        # choose triangle with largest min coefficient
+        # normally all but one will be negative
+        min_coeff_per_simplex = np.min(gains_all, axis=1)
+        matching_simplex = np.argmax(min_coeff_per_simplex, axis=0)
+        indices = self.loudspeaker_triplets[matching_simplex]
+        return indices, gains_all[matching_simplex, :]
+
+    def process(self, target_dir: NDArray) -> NDArray:
+        """
+        Find loudspeaker gains corresponding to the target direction vector.
+
+        Parameters
+        ----------
+        target_dir : NDArray
+            Target direction vector in 3D cartesian coordinates.
+
+        Returns
+        -------
+        NDArray
+            The gain vector for each loudspeaker in the setup.
+        """
+        # if the target direction vector points down, then we will have to invert a
+        # singular matrix of triplet speakers on the floor, which is not possible.
+        # A hack to fix that is, if there is no loudspeaker below ear level,
+        # then force the elevation of the target vector to be slightly above ear level
+        if not np.all(self.is_speaker_below_ear_level):
+            az, el, dist = unpack_coordinates(
+                cart2sph(target_dir[:, 0], target_dir[:, 1], target_dir[:, 2]))
+            el[el < 0.0] = 1e-3
+            target_dir = sph2cart(az, el, dist)
+
+        num_target_dir = target_dir.shape[0]
+        self.loudspeaker_gains = np.zeros(
+            (self.num_loudspeakers, num_target_dir))
+
+        for i in range(num_target_dir):
+            loudspeaker_idx, gains = self.find_active_triangle(target_dir[i])
+            scaled_gains = gains / np.linalg.norm(gains)
+
+            for k in range(len(loudspeaker_idx)):
+                self.loudspeaker_gains[loudspeaker_idx[k], i] = scaled_gains[k]
+
+        return self.loudspeaker_gains

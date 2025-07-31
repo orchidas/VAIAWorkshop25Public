@@ -1,7 +1,9 @@
+from collections import deque
 import pyfar as pf
 import numpy as np
 import soundfile as sf
 import scipy
+from scipy.io import savemat
 from numpy.typing import NDArray, ArrayLike
 from scipy.signal import fftconvolve
 from typing import Any, Optional, Tuple, Union
@@ -335,6 +337,65 @@ def filterbank(x: np.ndarray,
             y[i_band, ...] = np.fft.irfft(Y_band, n=x.shape[0], axis=0)
 
     return y, center_freqs
+
+
+class DataLogger:
+    """
+    Class to facilitate storing numerical data for later use, e.g. plotting.
+    """
+
+    def __init__(self, max_len: Optional[int] = None):
+        """
+        Parameters
+        ----------
+        max_len : int, optional
+            Maximum allowed length of data history (default is None, no limit).
+        """
+        self.max_len = max_len
+        self._deques = {}
+
+    def log(self, key: str, data: Any) -> None:
+        """
+        Store an incoming piece of data.
+
+        Parameters
+        ----------
+        key : str
+            String key referring to the data.
+        data : Any
+            The data itself, e.g. a numpy array.
+        """
+        if key not in self._deques:
+            self._deques[key] = deque([], maxlen=self.max_len)
+
+        self._deques[key].append(data)
+
+    def get_array(self, key: str) -> NDArray:
+        """
+        Get stored data as a numpy array.
+
+        Parameters
+        ----------
+        key : str
+            String key referring to the data.
+
+        Returns
+        -------
+        NDArray
+            Data as a numpy array.
+        """
+        return np.array(self._deques[key])
+
+    def to_file(self, fn: str):
+        """
+        Save to a mat file.
+
+        Parameters
+        ----------
+        fn : str
+            File name to save the data to.
+        """
+        savemat(fn, self._deques)
 
 
 def discard_last_n_percent(x: np.ndarray,
