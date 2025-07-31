@@ -50,7 +50,7 @@ def convert_A2B_format_tetramic(rirs_Aformat: NDArray) -> NDArray:
     Y = np.column_stack((Y_00, Y_1m1, Y_10, Y_11))
 
     # Invert to get A → B transform
-    Y_inv = np.linalg.pinv(Y)
+    Y_inv = np.linalg.inv(Y)
 
     # Multiply wth inverted matrix with A-format RIRs to get B-format RIRs of
     # shape (num_time_samples, num_channels). Use einsum
@@ -72,7 +72,7 @@ def convert_srir_to_brir(srirs: NDArray, hrir_sh: NDArray,
     hrir_sh : NDArray
         HRIRs encoded in SH domain of shape (num_ambi_channels, 2, num_time_samps).
     head_orientations : ArrayLike
-        Head orientations of shape (num_ori, 2).
+        Head orientations of shape (num_ori, 2) in degrees.
 
     Returns
     -------
@@ -83,7 +83,7 @@ def convert_srir_to_brir(srirs: NDArray, hrir_sh: NDArray,
     num_receivers = srirs.shape[0]
     num_freq_bins = 2**int(np.ceil(np.log2(srirs.shape[-1])))
 
-    # take FFT of SRIRs - size is num_ambi_channels x num_receivers x num_time_samples
+    # take FFT of SRIRs - size is num_receivers x num_ambi_channels x num_time_samples
     ambi_rtfs = rfft(srirs, num_freq_bins, axis=-1)
 
     # take FFT of SH-HRIRs these are of shape num_ambi_channels x 2 x num_freq_samples
@@ -99,21 +99,33 @@ def convert_srir_to_brir(srirs: NDArray, hrir_sh: NDArray,
     for rec_pos_idx in tqdm(range(num_receivers)):
 
         # get current SRIR FFT = shape is num_ambi_channels x num_freqs
+        cur_ambi_rtf = ambi_rtfs[rec_pos_idx, ...]
 
         # loop through head orientations
         for ori_idx in range(num_orientations):
 
-            pass
             # get current head orientation
+            cur_head_orientation = head_orientations[ori_idx, :]
 
             # get rotation matrix in the opposite direction - size num_freq_bins x num_ambi_channels
+            cur_rotation_matrix = spa.sph.sh_rotation_matrix(
+                ambi_order,
+                np.radians(-cur_head_orientation[0]),
+                np.radians(-cur_head_orientation[1]),
+                0,
+                sh_type='real')
 
             # get current rotated SRIR
+            rotated_ambi_rtf = cur_rotation_matrix @ cur_ambi_rtf
 
             # get the binaural room transfer function by conjugating
             # freq-domain SRIRs and multiplying them with SH-HRTFs
+            cur_brtf = np.einsum('nrf, nf -> fr', np.conj(ambi_hrtfs),
+                                 rotated_ambi_rtf)
 
             # get the BRIR by taking an inverse FFT and save it to current
             # receiver position and orientation index
+            cur_brir = irfft(cur_brtf, n=num_freq_bins, axis=0)
+            brirs[rec_pos_idx, ori_idx, ...] = cur_brir
 
     return brirs
