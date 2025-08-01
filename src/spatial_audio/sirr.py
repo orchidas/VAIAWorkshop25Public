@@ -194,9 +194,13 @@ class SIRR:
         # calculate the velocity vector from the X,Y,Z channels of B-format RIRs
         X_t = np.zeros((self.num_freq_bins, 3), dtype=np.complex64)
 
+        # X_t is in order [Y, Z, X]
         for k in range(self.num_chans - 1):
             X_t += np.einsum('f, c -> fc', cur_stft_frame[k + 1, :],
                              self.unit_vectors[k].squeeze())
+
+        # But X_t should be in order [X, Y, Z]
+        X_t = X_t[:, [-1, 0, 1]]
 
         # calculate the intensity vector from the velocity vector and W channel
         inner_product = np.real(
