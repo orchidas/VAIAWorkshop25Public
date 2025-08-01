@@ -110,8 +110,9 @@ class SIRR:
         NDArray
             List of unit vectors in 3D cartesian coordinates.
         """
-        unit_vectors = np.asarray([[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-                                  dtype=np.float32)
+        # Assume ACN channel ordering
+        unit_vectors = np.asarray([[0, 1, 0], [0, 0, 1], [1, 0, 0]],
+                                  dtype=np.complex64)
         return [vec / np.linalg.norm(vec) for vec in unit_vectors]
 
     def _init_vbap(self, loudspeaker_positions: NDArray,
@@ -191,19 +192,37 @@ class SIRR:
         #### WRITE YOUR CODE HERE ####
 
         # calculate the velocity vector from the X,Y,Z channels of B-format RIRs
+        X_t = np.zeros((self.num_freq_bins, 3), dtype=np.complex64)
+
+        for k in range(self.num_chans - 1):
+            X_t += np.einsum('f, c -> fc', cur_stft_frame[k + 1, :],
+                             self.unit_vectors[k].squeeze())
 
         # calculate the intensity vector from the velocity vector and W channel
+        inner_product = np.real(
+            np.einsum('f, fc -> fc', np.conj(cur_stft_frame[0, :]), X_t))
+
+        intensity = (np.sqrt(2) / self.impedance) * inner_product
 
         # calculate diffuseness metric
+        diffuseness = 1 - (
+            (np.sqrt(2) * np.linalg.norm(inner_product, axis=-1)) /
+            (np.abs(cur_stft_frame[0, :])**2 +
+             0.5 * np.linalg.norm(X_t, axis=-1)**2))
 
         # calculate azimuth and elevation from the diffuseness metric
+        azimuth = np.arctan2(-intensity[:, 1], -intensity[:, 0])
+        elevation = np.arctan2(
+            -intensity[:, 2], np.sqrt(intensity[:, 0]**2 + intensity[:, 1]**2))
 
         # return an object of type SIRRParameters
-        return
+        return SIRRParameters(intensity, diffuseness, azimuth, elevation)
 
     def process_frame(self, cur_stft_frame: NDArray) -> NDArray:
         """
         Process the current STFT frame by using SMOOTHED SIRR PARAMETERS.
+        self.smoothed_parameters is of type SIRRParameters and has the
+        paramters smoothed over time.
 
         Parameters
         ----------
@@ -217,15 +236,26 @@ class SIRR:
         """
         #### WRITE YOUR CODE HERE ####
 
+        cur_output_frame = np.zeros(
+            (self.num_loudspeakers, self.num_freq_bins), dtype=np.complex64)
+
         # decompose into directional part = sqrt(1 - smoothed_diffuseness_metric) * W
+        directional_part = np.sqrt(
+            (1 -
+             self.smoothed_params.diffuseness_metric)) * cur_stft_frame[0, ...]
 
         # process directional part
+        cur_output_frame = self.process_directional_part(directional_part)
 
         # decompose into diffuse part = smoothed_diffuseness_metric * W**2
+        diffuse_part = self.smoothed_params.diffuseness_metric * np.power(
+            cur_stft_frame[0, ...], 2)
 
         # process diffuse part
+        cur_output_frame += self.process_diffuse_part(diffuse_part)
 
         # add directional and diffuse parts and return output
+        return cur_output_frame
 
     def process_directional_part(self, directional_part: NDArray) -> NDArray:
         """
@@ -244,17 +274,25 @@ class SIRR:
         #### WRITE YOUR CODE HERE ####
 
         # get the target direction of the directional component in cartesian
-        # coordinates from the DoAs
+        # coordinates from the smoothed DoAs
+        target_dir = sph2cart(self.smoothed_params.azimuth,
+                              self.smoothed_params.elevation,
+                              np.ones(self.num_freq_bins),
+                              degrees=False)
 
         # get loudspeaker_gains using VBAP by calling self.vbap.process()
         # shape is  (num_loudspeakers, num_freq_bins)
+        loudspeaker_gains = self.vbap.process(target_dir).astype(np.complex64)
 
         # get the directional signal for each loudspeaker by
         # multiplying directional_part with loudspeaker_gains
         # shape is (num_loudspeakers, num_freq_bins)
+        processed_directional_part = np.einsum('nf, f -> nf',
+                                               loudspeaker_gains,
+                                               directional_part)
 
         # return directional part for all loudspeakers
-        return
+        return processed_directional_part
 
     def process_diffuse_part(self, diffuse_part: NDArray) -> NDArray:
         """
@@ -329,6 +367,7 @@ class SIRR:
             else:
                 # smooth the current parameters
                 self.smooth_parameters(cur_params)
+            # process current frame
             self.output_signal[..., k] = self.process_frame(cur_frame)
 
         # take inverse STFT of output signals to get one RIR per loudspeaker
